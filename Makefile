@@ -21,8 +21,12 @@ BIN_DIR             ?= $(shell pwd)
 DOCKER_IMAGE_NAME   ?= sql-exporter
 DOCKER_IMAGE_TAG    ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 
+export DB2HOME=$(GOPATH)/src/github.com/ibmdb/go_ibm_db/installer/clidriver
+export CGO_CFLAGS=-I$(DB2HOME)/include
+export CGO_LDFLAGS=-L$(DB2HOME)/lib
+export LD_LIBRARY_PATH=$(DB2HOME)/lib
 
-all: format build test
+all: format depend build test
 
 style:
 	@echo ">> checking code style"
@@ -41,6 +45,10 @@ vet:
 	@$(GO) vet $(pkgs)
 
 build: promu
+	export DB2HOME=$(GOPATH)/src/github.com/ibmdb/go_ibm_db/installer/clidriver
+	export CGO_CFLAGS=-I$(DB2HOME)/include
+	export CGO_LDFLAGS=-L$(DB2HOME)/lib
+	export LD_LIBRARY_PATH=$(DB2HOME)/lib
 	@echo ">> building binaries"
 	@$(PROMU) build --prefix $(PREFIX)
 
@@ -56,6 +64,12 @@ promu:
 	@GOOS=$(shell uname -s | tr A-Z a-z) \
 		GOARCH=$(subst x86_64,amd64,$(patsubst i%86,386,$(shell uname -m))) \
 		$(GO) get -u github.com/prometheus/promu
+	
+depend:
+	#@$(GO) get -d github.com/ibmdb/go_ibm_db
+	@rm -f $(GOPATH)/src/github.com/ibmdb/go_ibm_db/installer/clidriver
+	@cd $(GOPATH)/src/github.com/ibmdb/go_ibm_db/installer/ && $(GO) run setup.go
+	@echo "Dependencies Installed"	
 
 
-.PHONY: all style format build test vet tarball docker promu
+.PHONY: all style format build test vet tarball docker promu depend

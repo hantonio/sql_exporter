@@ -10,11 +10,9 @@ package mysql
 
 import (
 	"bytes"
-	"crypto/rsa"
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"math/big"
 	"net"
 	"net/url"
 	"sort"
@@ -43,8 +41,6 @@ type Config struct {
 	Collation        string            // Connection collation
 	Loc              *time.Location    // Location for time.Time values
 	MaxAllowedPacket int               // Max packet size allowed
-	ServerPubKey     string            // Server public key name
-	pubKey           *rsa.PublicKey    // Server public key
 	TLSConfig        string            // TLS configuration name
 	tls              *tls.Config       // TLS configuration
 	Timeout          time.Duration     // Dial timeout
@@ -73,26 +69,6 @@ func NewConfig() *Config {
 	}
 }
 
-func (cfg *Config) Clone() *Config {
-	cp := *cfg
-	if cp.tls != nil {
-		cp.tls = cfg.tls.Clone()
-	}
-	if len(cp.Params) > 0 {
-		cp.Params = make(map[string]string, len(cfg.Params))
-		for k, v := range cfg.Params {
-			cp.Params[k] = v
-		}
-	}
-	if cfg.pubKey != nil {
-		cp.pubKey = &rsa.PublicKey{
-			N: new(big.Int).Set(cfg.pubKey.N),
-			E: cfg.pubKey.E,
-		}
-	}
-	return &cp
-}
-
 func (cfg *Config) normalize() error {
 	if cfg.InterpolateParams && unsafeCollations[cfg.Collation] {
 		return errInvalidDSNUnsafeCollation
@@ -113,35 +89,17 @@ func (cfg *Config) normalize() error {
 		default:
 			return errors.New("default addr for network '" + cfg.Net + "' unknown")
 		}
+
 	} else if cfg.Net == "tcp" {
 		cfg.Addr = ensureHavePort(cfg.Addr)
 	}
 
-	switch cfg.TLSConfig {
-	case "false", "":
-		// don't set anything
-	case "true":
-		cfg.tls = &tls.Config{}
-	case "skip-verify", "preferred":
-		cfg.tls = &tls.Config{InsecureSkipVerify: true}
-	default:
-		cfg.tls = getTLSConfigClone(cfg.TLSConfig)
-		if cfg.tls == nil {
-			return errors.New("invalid value / unknown config name: " + cfg.TLSConfig)
-		}
-	}
-
-	if cfg.tls != nil && cfg.tls.ServerName == "" && !cfg.tls.InsecureSkipVerify {
-		host, _, err := net.SplitHostPort(cfg.Addr)
-		if err == nil {
-			cfg.tls.ServerName = host
-		}
-	}
-
-	if cfg.ServerPubKey != "" {
-		cfg.pubKey = getServerPubKey(cfg.ServerPubKey)
-		if cfg.pubKey == nil {
-			return errors.New("invalid value / unknown server pub key name: " + cfg.ServerPubKey)
+	if cfg.tls != nil {
+		if cfg.tls.ServerName == "" && !cfg.tls.InsecureSkipVerify {
+			host, _, err := net.SplitHostPort(cfg.Addr)
+			if err == nil {
+				cfg.tls.ServerName = host
+			}
 		}
 	}
 
@@ -294,16 +252,6 @@ func (cfg *Config) FormatDSN() string {
 			hasParam = true
 			buf.WriteString("?rejectReadOnly=true")
 		}
-	}
-
-	if len(cfg.ServerPubKey) > 0 {
-		if hasParam {
-			buf.WriteString("&serverPubKey=")
-		} else {
-			hasParam = true
-			buf.WriteString("?serverPubKey=")
-		}
-		buf.WriteString(url.QueryEscape(cfg.ServerPubKey))
 	}
 
 	if cfg.Timeout > 0 {
@@ -564,14 +512,6 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 				return errors.New("invalid bool value: " + value)
 			}
 
-		// Server public key
-		case "serverPubKey":
-			name, err := url.QueryUnescape(value)
-			if err != nil {
-				return fmt.Errorf("invalid value for server pub key name: %v", err)
-			}
-			cfg.ServerPubKey = name
-
 		// Strict mode
 		case "strict":
 			panic("strict mode has been removed. See https://github.com/go-sql-driver/mysql/wiki/strict-mode")
@@ -589,17 +529,25 @@ func parseDSNParams(cfg *Config, params string) (err error) {
 			if isBool {
 				if boolValue {
 					cfg.TLSConfig = "true"
+					cfg.tls = &tls.Config{}
 				} else {
 					cfg.TLSConfig = "false"
 				}
-			} else if vl := strings.ToLower(value); vl == "skip-verify" || vl == "preferred" {
+			} else if vl := strings.ToLower(value); vl == "skip-verify" {
 				cfg.TLSConfig = vl
+				cfg.tls = &tls.Config{InsecureSkipVerify: true}
 			} else {
 				name, err := url.QueryUnescape(value)
 				if err != nil {
 					return fmt.Errorf("invalid value for TLS config name: %v", err)
 				}
-				cfg.TLSConfig = name
+
+				if tlsConfig := getTLSConfigClone(name); tlsConfig != nil {
+					cfg.TLSConfig = name
+					cfg.tls = tlsConfig
+				} else {
+					return errors.New("invalid value / unknown config name: " + name)
+				}
 			}
 
 		// I/O write Timeout

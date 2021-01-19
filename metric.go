@@ -50,20 +50,9 @@ func NewMetricFamily(logContext string, mc *config.MetricConfig, constLabels []*
 		labels = append(labels, mc.ValueLabel)
 	}
 
-	// Create a copy of original slice to avoid modifying constLabels
-	sortedLabels := append(constLabels[:0:0], constLabels...)
-
-	for k, v := range mc.StaticLabels {
-		sortedLabels = append(sortedLabels, &dto.LabelPair{
-			Name:  proto.String(k),
-			Value: proto.String(v),
-		})
-	}
-	sort.Sort(labelPairSorter(sortedLabels))
-
 	return &MetricFamily{
 		config:      mc,
-		constLabels: sortedLabels,
+		constLabels: constLabels,
 		labels:      labels,
 		logContext:  logContext,
 	}, nil
@@ -242,25 +231,8 @@ func makeLabelPairs(desc MetricDesc, labelValues []string) []*dto.LabelPair {
 		})
 	}
 	labelPairs = append(labelPairs, constLabels...)
-	sort.Sort(labelPairSorter(labelPairs))
+	sort.Sort(prometheus.LabelPairSorter(labelPairs))
 	return labelPairs
-}
-
-// labelPairSorter implements sort.Interface.
-// It provides a sortable version of a slice of dto.LabelPair pointers.
-
-type labelPairSorter []*dto.LabelPair
-
-func (s labelPairSorter) Len() int {
-	return len(s)
-}
-
-func (s labelPairSorter) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s labelPairSorter) Less(i, j int) bool {
-	return s[i].GetName() < s[j].GetName()
 }
 
 type invalidMetric struct {

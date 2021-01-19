@@ -1,0 +1,137 @@
+# This collector will be referenced in the exporter configuration as `pricing_data_freshness`.
+collector_name: tickets
+
+# A Prometheus metric with (optional) additional labels, value and labels populated from one query.
+metrics:
+  - metric_name: ticket_amount_2016
+    type: gauge
+    help: 'Amount of tickets in 2016'
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and reportdate >=  '2018-01-01 00:00:00.000'  and reportdate <=  '2018-12-31 23:59:59.000' )
+
+  - metric_name: ticket_amount_2017
+    type: gauge
+    help: 'Amount of tickets in 2017'
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and reportdate >=  '2017-01-01 00:00:00.000'  and reportdate <=  '2017-12-31 23:59:59.000' )
+
+  - metric_name: ticket_amount_2018
+    type: gauge
+    help: 'Amount of tickets in 2018'
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and reportdate >=  '2018-01-01 00:00:00.000'  and reportdate <=  '2018-12-31 23:59:59.000' )
+
+  - metric_name: ticket_amount_2019
+    type: gauge
+    help: 'Amount of tickets in 2019'
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and reportdate >=  '2019-01-01 00:00:00.000'  and reportdate <=  '2019-12-31 23:59:59.000' )
+
+  - metric_name: ticket_amount_2020
+    type: gauge
+    help: 'Amount of tickets in 2020'
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and reportdate >=  '2020-01-01 00:00:00.000'  and reportdate <=  '2020-12-31 23:59:59.000' )
+
+  - metric_name: new_tickets
+    type: gauge
+    help: "New tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and status = 'NEW')            
+
+  - metric_name: open_tickets
+    type: gauge
+    help: "Open tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and status != 'NEW' and status != 'CLOSED' and status != 'CANCELED')
+
+  - metric_name: solved_tickets
+    type: gauge
+    help: "Solved tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and status = 'RESOLVED')
+
+  - metric_name: problem_tickets
+    type: gauge
+    help: "Problem tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.PROBLEM where (siteid = 'TI' and status != 'CLOSED' and status != 'CANCELED')
+
+  - metric_name: incident_tickets
+    type: gauge
+    help: "Incident tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.INCIDENT where (siteid = 'TI' and status != 'CLOSED' and status != 'CANCELED')            
+
+  - metric_name: backlog_tickets
+    type: gauge
+    help: "Backlog tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and status != 'CLOSED' and status != 'CANCELED' and REQUESTTYPE = 'BACKLOG')
+
+  - metric_name: LucasOliveira_tickets
+    type: gauge
+    help: "LucasOliveira tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'LUCASOLIVEIRA' and status != 'CLOSED' and status != 'CANCELED')
+
+  - metric_name: GuidoSilve_tickets
+    type: gauge
+    help: "GuidoSilva tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'GUIDOSILVA' and status != 'CLOSED' and status != 'CANCELED')            
+
+  - metric_name: ElisanSouza_tickets
+    type: gauge
+    help: "ElisanSouza tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'ELISANSOUZA' and status != 'CLOSED' and status != 'CANCELED')
+
+  - metric_name: FelipeDias_tickets
+    type: gauge
+    help: "FelipeDias tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'FELIPEDIAS' and status != 'CLOSED' and status != 'CANCELED')
+
+  - metric_name: HuelderSilva_tickets
+    type: gauge
+    help: "HuelderSilva tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'HUELDERSILVA' and status != 'CLOSED' and status != 'CANCELED')
+
+  - metric_name: FelipeAscensio_tickets
+    type: gauge
+    help: "FelipeAscencio tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'FELIPEASCENSIO' and status != 'CLOSED' and status != 'CANCELED')            
+
+  - metric_name: GabrielViegas_tickets
+    type: gauge
+    help: "GabrielViegas tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'GABRIELVIEGAS' and status != 'CLOSED' and status != 'CANCELED')
+
+  - metric_name: JonasDeusdara_tickets
+    type: gauge
+    help: "JonasDeusdara tickets"
+    values: [1]
+    query: |
+      select count(ticketid) from maximo.SR where (siteid = 'TI' and owner = 'JONASDEUSDARA' and status != 'CLOSED' and status != 'CANCELED')
