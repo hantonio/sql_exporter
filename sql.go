@@ -9,6 +9,7 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go" // register the ClickHouse driver
 	_ "github.com/denisenkom/go-mssqldb"    // register the MS-SQL driver
 	_ "github.com/go-sql-driver/mysql"      // register the MySQL driver
+	_ "github.com/ibmdb/go_ibm_db" // register IBM DB2 driver
 	log "github.com/golang/glog"
 	_ "github.com/lib/pq" // register the PostgreSQL driver
 )
@@ -55,6 +56,8 @@ func OpenConnection(ctx context.Context, logContext, dsn string, maxConns, maxId
 	switch driver {
 	case "mysql":
 		dsn = strings.TrimPrefix(dsn, "mysql://")
+	case "go_ibm_db":
+		dsn = strings.TrimPrefix(dsn, "go_ibm_db://")
 	case "clickhouse":
 		dsn = "tcp://" + strings.TrimPrefix(dsn, "clickhouse://")
 	}
@@ -85,7 +88,7 @@ func OpenConnection(ctx context.Context, logContext, dsn string, maxConns, maxId
 		if len(logContext) > 0 {
 			logContext = fmt.Sprintf("[%s] ", logContext)
 		}
-		log.Infof("%sDatabase handle successfully opened with driver %s.", logContext, driver)
+		log.Infof("%s[HANTONIOVERSION]Database handle successfully opened with driver %s.", logContext, driver)
 	}
 	return conn, nil
 }
